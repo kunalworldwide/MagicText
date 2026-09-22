@@ -1,6 +1,7 @@
 import Foundation
 import AppKit
 import Carbon.HIToolbox
+import MagicTextCore
 
 /// Carbon global hotkey registration. Not unit-testable — verified in-app.
 final class HotkeyCenter {

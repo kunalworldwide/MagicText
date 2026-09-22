@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import ApplicationServices
+import MagicTextCore
 
 /// Orchestrates: hotkey -> read selection -> refine via gateway -> replace.
 /// Every failure path leaves the original text untouched and surfaces a reason.

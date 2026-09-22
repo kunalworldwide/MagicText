@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import Carbon.HIToolbox
+import MagicTextCore
 
 struct SettingsView: View {
     let flow: RefineFlow
