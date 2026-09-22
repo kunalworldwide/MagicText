@@ -41,8 +41,8 @@ final class HotkeyCenter {
         let callback: EventHandlerUPP = { _, event, userData in
             guard let event, let userData else { return noErr }
             var hkID = EventHotKeyID()
-            GetEventParameter(event, kEventParamDirectObject,
-                              typeEventHotKeyID,
+            GetEventParameter(event, EventParamName(kEventParamDirectObject),
+                              EventParamType(typeEventHotKeyID),
                               nil, MemoryLayout<EventHotKeyID>.size, nil, &hkID)
             if hkID.signature == HotkeyCenter.signature {
                 let center = Unmanaged<HotkeyCenter>.fromOpaque(userData).takeUnretainedValue()

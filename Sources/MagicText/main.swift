@@ -5,7 +5,7 @@ import MagicTextCore
 // MagicText — menu bar app entry point.
 // LSUIElement=true in Info.plist keeps it out of the Dock.
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var statusItem: NSStatusItem!
     private var flow: RefineFlow!
     private let hotkeyCenter = HotkeyCenter()
@@ -29,7 +29,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // First run: no gateway yet -> open Settings.
         if RefineFlow.Storage.loadConfig()?.baseURL.isEmpty != false {
-            flow.openSettings()
+            DispatchQueue.main.async { [weak self] in
+                self?.flow.openSettings()
+            }
         }
     }
 
@@ -63,10 +65,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = menu
     }
 
-    @objc private func openSettings() { flow.openSettings() }
-    @objc private func copyOriginal() { flow.copyOriginal() }
+    @objc private func openSettings() { MainActor.assumeIsolated { flow.openSettings() } }
+    @objc private func copyOriginal() { MainActor.assumeIsolated { flow.copyOriginal() } }
     @objc private func grantAccess() {
-        flow.requestAccessibility()
+        MainActor.assumeIsolated { flow.requestAccessibility() }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             self?.rebuildMenu()
         }

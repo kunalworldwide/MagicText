@@ -189,7 +189,7 @@ final class HotkeyRecorder {
 
     func start(completion: @escaping (Hotkey?) -> Void) {
         removeMonitor()
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event -> NSEvent? in
             self?.removeMonitor()
             if event.keyCode == UInt16(kVK_Escape) {
                 completion(nil)

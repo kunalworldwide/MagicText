@@ -30,7 +30,7 @@ enum TextEngine {
     private static func readViaAX() -> (String, AXUIElement)? {
         let systemWide = AXUIElementCreateSystemWide()
         var focused: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElement as CFString,
+        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString,
                                             &focused) == .success,
               let element = focused as? AXUIElement else { return nil }
 
