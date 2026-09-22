@@ -1,5 +1,6 @@
 import XCTest
 import AppKit
+import Carbon.HIToolbox
 @testable import MagicTextCore
 
 final class HotkeyTests: XCTestCase {
