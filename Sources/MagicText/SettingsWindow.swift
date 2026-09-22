@@ -197,7 +197,7 @@ final class HotkeyRecorder {
             }
             let modifiers = Hotkey.carbonMask(from: event.modifierFlags)
             guard modifiers != 0 else {
-                NSApp.beep()
+                NSSound.beep()
                 completion(nil)
                 return nil
             }

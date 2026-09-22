@@ -1,6 +1,7 @@
 import Foundation
 import AppKit
 import ApplicationServices
+import Carbon.HIToolbox
 import CoreGraphics
 
 /// Reads the selected text from the frontmost app via the Accessibility API,
@@ -31,16 +32,16 @@ enum TextEngine {
         let systemWide = AXUIElementCreateSystemWide()
         var focused: CFTypeRef?
         guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString,
-                                            &focused) == .success,
-              let element = focused as? AXUIElement else { return nil }
+                                            &focused) == .success, focused != nil else { return nil }
+        let element = unsafeBitCast(focused, to: AXUIElement.self)
 
         if let text = selectedText(of: element), !text.isEmpty {
             return (text, element)
         }
         // Web areas sometimes nest the text field one level down.
         var children: CFTypeRef?
-        if AXUIElementCopyAttributeValue(element, kAXChildren as CFString, &children) == .success,
-           let kids = children as? [AXUIElement] {
+        if AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &children) == .success,
+           let kids = unsafeBitCast(children, to: NSArray.self) as? [AXUIElement] {
             for kid in kids {
                 if let text = selectedText(of: kid), !text.isEmpty {
                     return (text, kid)
