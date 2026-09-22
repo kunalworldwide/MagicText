@@ -180,11 +180,17 @@ final class HotkeyRecorder {
     static let shared = HotkeyRecorder()
     private var monitor: Any?
 
+    private func removeMonitor() {
+        if let m = monitor {
+            NSEvent.removeMonitor(m)
+            monitor = nil
+        }
+    }
+
     func start(completion: @escaping (Hotkey?) -> Void) {
-        monitor?.remove()
+        removeMonitor()
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.monitor?.remove()
-            self?.monitor = nil
+            self?.removeMonitor()
             if event.keyCode == UInt16(kVK_Escape) {
                 completion(nil)
                 return nil
@@ -201,7 +207,6 @@ final class HotkeyRecorder {
     }
 
     func cancel() {
-        monitor?.remove()
-        monitor = nil
+        removeMonitor()
     }
 }

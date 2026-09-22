@@ -83,7 +83,7 @@ struct PillView: View {
         .frame(width: 244)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                .fill(.ultraThinMaterial)
                 .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
         )
         .overlay(
