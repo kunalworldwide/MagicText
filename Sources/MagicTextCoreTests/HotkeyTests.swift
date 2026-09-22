@@ -30,7 +30,7 @@ final class HotkeyTests: XCTestCase {
     }
 
     func testDisplayStringShowsShift() {
-        let h = Hotkey(keyCode: UInt32(kVK_ANSI_Space), modifiers: UInt32(cmdKey | shiftKey))
+        let h = Hotkey(keyCode: UInt32(kVK_Space), modifiers: UInt32(cmdKey | shiftKey))
         XCTAssertEqual(h.displayString, "⇧⌘Space")
     }
 }
