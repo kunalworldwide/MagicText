@@ -3,7 +3,9 @@ import ApplicationServices
 import MagicTextCore
 
 // MagicText — menu bar app entry point.
-// LSUIElement=true in Info.plist keeps it out of the Dock.
+// LSUIElement=true in Info.plist keeps it out of the Dock, but we still install
+// a main menu with a standard Edit menu — without it, ⌘C/⌘V/⌘X/⌘A key
+// equivalents don't reach text fields (the paste bug in v0.0.1).
 
 final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var statusItem: NSStatusItem!
@@ -14,9 +16,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         flow = RefineFlow(hotkeyCenter: hotkeyCenter)
         hotkeyCenter.onTrigger = { [weak self] in self?.flow.run() }
 
+        // Standard main menu — gives every text field ⌘C/⌘V/⌘X/⌘A/⌘Z.
+        let mainMenu = NSMenu()
+        let appMenuItem = NSMenuItem()
+        mainMenu.addItem(appMenuItem)
+        let editMenuItem = NSMenuItem()
+        mainMenu.addItem(editMenuItem)
+
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: "Settings…", action: #selector(NSApplication.orderFrontCharacterPalette(_:)), keyEquivalent: "")
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "Quit MagicText", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenuItem.submenu = appMenu
+
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        editMenu.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+        editMenu.addItem(.separator())
+        editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editMenuItem.submenu = editMenu
+
+        NSApp.mainMenu = mainMenu
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "wand.and.stars",
-                                           accessibilityDescription: "MagicText")
+        if let button = statusItem.button {
+            if let appIcon = NSImage(named: "AppIcon") {
+                button.image = appIcon
+            } else {
+                button.image = NSImage(systemSymbolName: "wand.and.stars",
+                                        accessibilityDescription: "MagicText")
+            }
+        }
         rebuildMenu()
 
         if !AXIsProcessTrusted() {
@@ -28,7 +61,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         hotkeyCenter.register(hk)
 
         // First run: no gateway yet -> open Settings.
-        if RefineFlow.Storage.loadConfig()?.baseURL.isEmpty != false {
+        if RefineFlow.Storage.loadConfig()?.baseURL.isEmpty != false
+            && RefineFlow.Storage.localBackendID().isEmpty {
             DispatchQueue.main.async { [weak self] in
                 self?.flow.openSettings()
             }

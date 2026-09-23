@@ -5,6 +5,29 @@ import MagicTextCore
 
 struct SettingsView: View {
     let flow: RefineFlow
+    @State private var selectedTab: Int = 0
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            BackendTabView(flow: flow)
+                .tabItem { Label("Backend", systemImage: "server.rack") }
+                .tag(0)
+            LocalModelsTabView(flow: flow)
+                .tabItem { Label("Local Models", systemImage: "cpu") }
+                .tag(1)
+            UsageTabView(flow: flow)
+                .tabItem { Label("Usage & History", systemImage: "clock.arrow.circlepath") }
+                .tag(2)
+        }
+        .frame(width: 640, height: 540)
+    }
+}
+
+// MARK: - Backend tab
+
+struct BackendTabView: View {
+    let flow: RefineFlow
+
     @State private var baseURL: String
     @State private var apiKey: String = ""
     @State private var savedKey: Bool = false
@@ -26,41 +49,47 @@ struct SettingsView: View {
         _hotkey = State(initialValue: RefineFlow.Storage.loadHotkey())
     }
 
+    var isPreset: Bool { GatewayPresets.matching(url: baseURL) != nil || baseURL.isEmpty }
+
     var body: some View {
         Form {
             Section {
-                TextField("Base URL", text: $baseURL)
-                    .autocorrectionDisabled()
-                    .onChange(of: baseURL) { save() }
+                Picker("Provider", selection: $baseURL) {
+                    Text("Custom…").tag("")
+                    ForEach(GatewayPresets.all) { p in
+                        Text(p.name).tag(p.baseURL)
+                    }
+                }
+                if baseURL.isEmpty {
+                    TextField("Base URL", text: $baseURL, prompt: Text("https://your-gateway/v1"))
+                        .autocorrectionDisabled()
+                }
+                .onChange(of: baseURL) { save() }
             } header: {
-                Text("AI Gateway")
+                Text("Provider")
             } footer: {
-                Text("Any OpenAI-compatible endpoint — https://api.openai.com/v1 · https://openrouter.ai/api/v1 · http://localhost:11434/v1 (Ollama)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(providerFooter)
             }
 
             Section {
                 SecureField("API Key (stored in Keychain)", text: $apiKey)
                     .onChange(of: apiKey) { newKey in
-                        // Only ever write; empty field must never wipe a stored key.
+                        // Only ever write; an empty field must never wipe a stored key.
                         let trimmed = newKey.trimmingCharacters(in: .whitespacesAndNewlines)
                         if !trimmed.isEmpty {
                             SystemKeychain().save(trimmed, for: KeychainAccount.gatewayKey)
                             savedKey = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                savedKey = false
-                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { savedKey = false }
                         }
                         save()
                     }
                 if savedKey {
                     Text("Saved ✓").font(.caption).foregroundStyle(.green)
                 }
+            } header: {
+                Text("Credentials")
             } footer: {
-                Text("Ollama/LM Studio on localhost need no key.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text("Ollama / LM Studio / local servers need no key.")
             }
 
             Section {
@@ -75,15 +104,15 @@ struct SettingsView: View {
                     }
                     .onChange(of: selectedModel) { save() }
                 } else if !selectedModel.isEmpty {
-                    Text("Current: \(selectedModel)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text("Current: \(selectedModel)").font(.caption).foregroundStyle(.secondary)
                 }
                 if let msg = modelsMessage {
                     Text(msg).font(.caption).foregroundStyle(.red)
                 }
             } header: {
                 Text("Model")
+            } footer: {
+                Text("The gateway model used to refine text in place.")
             }
 
             Section {
@@ -103,10 +132,7 @@ struct SettingsView: View {
                         .font(.system(size: 20, weight: .semibold))
                         .frame(width: 110)
                         .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(.quaternary.opacity(0.4))
-                        )
+                        .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.4)))
                     Button(recording ? "Press keys… (Esc cancels)" : "Record Shortcut") {
                         recording = true
                         HotkeyRecorder.shared.start { result in
@@ -128,19 +154,19 @@ struct SettingsView: View {
                 Text("Global Shortcut")
             } footer: {
                 Text("Select text anywhere, press the shortcut, and MagicText refines it in place.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520, height: 620)
+    }
+
+    private var providerFooter: String {
+        if let p = GatewayPresets.matching(url: baseURL) { return p.note }
+        if baseURL.isEmpty { return "Pick a provider or enter any OpenAI-compatible endpoint." }
+        return "Any OpenAI-compatible endpoint"
     }
 
     private func save() {
-        let config = GatewayConfig(baseURL: baseURL, model: selectedModel)
-        RefineFlow.Storage.saveConfig(config)
-        RefineFlow.Storage.saveTone(tone)
-        flow.applyHotkey(hotkey)
+        flow.saveBackend(baseURL: baseURL, model: selectedModel, tone: tone, hotkey: hotkey)
     }
 
     private func fetchModels() {
@@ -175,7 +201,8 @@ struct SettingsView: View {
     }
 }
 
-/// Captures the next key combo with modifiers via a local NSEvent monitor.
+// MARK: - Hotkey recorder (unchanged)
+
 final class HotkeyRecorder {
     static let shared = HotkeyRecorder()
     private var monitor: Any?
