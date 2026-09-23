@@ -95,6 +95,8 @@ public final class UsageLog {
         public var successRate = 0.0
         public var avgLatencyMs = 0
         public var charsRefined = 0
+
+        public init() {}
     }
 
     public func stats() -> Stats {

@@ -64,12 +64,12 @@ struct BackendTabView: View {
                     TextField("Base URL", text: $baseURL, prompt: Text("https://your-gateway/v1"))
                         .autocorrectionDisabled()
                 }
-                .onChange(of: baseURL) { save() }
             } header: {
                 Text("Provider")
             } footer: {
                 Text(providerFooter)
             }
+            .onChange(of: baseURL) { save() }
 
             Section {
                 SecureField("API Key (stored in Keychain)", text: $apiKey)

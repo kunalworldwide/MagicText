@@ -55,7 +55,7 @@ struct LocalModelsTabView: View {
                 HStack {
                     Text(activeBackend.isEmpty ? "Using cloud gateway" : "Local model active: \(activeBackend)")
                         .font(.callout)
-                        .foregroundStyle(activeBackend.isEmpty ? .secondary : .green)
+                        .foregroundStyle(activeBackend.isEmpty ? Color.secondary : Color.green)
                     Spacer()
                     if engine.isLoading {
                         ProgressView().controlSize(.small)
