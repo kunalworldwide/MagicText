@@ -10,6 +10,7 @@
 [![Release](https://img.shields.io/github/v/release/kunalworldwide/MagicText?color=blue)](../../releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-lightgrey)](#install)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support%20the%20project-yellow?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/kunalworldwide)
 
 A native menu bar app that fixes spelling, punctuation and grammar in any text field on your Mac — powered by the AI gateway of your choice, or a local model that never leaves your machine.
 
@@ -81,6 +82,10 @@ Requires Xcode's Swift toolchain (macOS 14+ SDK). CI builds and publishes the DM
 - [x] v0.2 — local MLX models, model manager, usage history, presets
 - [ ] v0.3 — per-app tone rules
 - [ ] v0.4 — signed + notarized builds, Homebrew cask
+
+## Support
+
+If MagicText saves you time, you can [buy me a coffee](https://buymeacoffee.com/kunalworldwide) ☕ — every cup funds the next feature.
 
 ## License
 
