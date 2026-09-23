@@ -2,6 +2,8 @@ import Foundation
 import MLXLLM
 import MLXLMCommon
 import MLXHuggingFace
+import HuggingFace
+import Tokenizers
 import MagicTextCore
 
 /// Runs a local MLX model on-device for refinement. One loaded model at a time.
