@@ -1,6 +1,8 @@
 import Foundation
 import MLXLLM
 import MLXLMCommon
+import MLXLMTokenizers
+import MLXLMHuggingFace
 import MagicTextCore
 
 /// Runs a local MLX model on-device for refinement. One loaded model at a time.
@@ -14,7 +16,7 @@ final class LocalModelEngine {
 
     var isLoading: Bool { loading }
 
-    /// HF cache layout: ~/.cache/huggingface/hub/models--mlx-community--<name>-<rev>
+    /// HF cache layout: ~/.cache/huggingface/hub/models--mlx-community--<name>
     private static func cacheDir(for id: String) -> URL {
         let hf = id.replacingOccurrences(of: "/", with: "--")
         return FileManager.default.homeDirectoryForCurrentUser
@@ -35,13 +37,16 @@ final class LocalModelEngine {
         }
     }
 
-    /// Downloads (if needed) and loads a model. Call on main actor.
+    /// Downloads (if needed) and loads a model.
     func load(id: String) async throws {
         guard !loading else { return }
         loading = true
         defer { loading = false }
+        let downloader = HuggingFaceDownloader()
         context = try await LLMModelFactory.shared.load(
-            configuration: .init(id: id))
+            from: downloader,
+            using: TokenizersLoader(),
+            configuration: ModelConfiguration(id: id))
         loadedModelID = id
     }
 
