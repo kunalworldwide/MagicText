@@ -34,7 +34,7 @@ public enum LocalModelCatalog {
         LocalModel(id: "mlx-community/Llama-3.2-1B-Instruct-4bit", name: "Llama 3.2 1B", params: "1B",
                    sizeGB: 0.7, quality: 3, ramNeededGB: 2.0, note: "Snappy, good for English"),
         LocalModel(id: "mlx-community/Qwen2.5-3B-Instruct-4bit", name: "Qwen 2.5 3B", params: "3B",
-                   quality: 4, sizeGB: 2.0, ramNeededGB: 4.0, note: "Recommended — quality jump, still fast"),
+                   sizeGB: 2.0, quality: 4, ramNeededGB: 4.0, note: "Recommended — quality jump, still fast"),
         LocalModel(id: "mlx-community/Llama-3.2-3B-Instruct-4bit", name: "Llama 3.2 3B", params: "3B",
                    sizeGB: 2.0, quality: 4, ramNeededGB: 4.0, note: "Great English refinement"),
         LocalModel(id: "mlx-community/Qwen2.5-7B-Instruct-4bit", name: "Qwen 2.5 7B", params: "7B",

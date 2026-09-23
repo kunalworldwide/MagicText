@@ -53,7 +53,11 @@ public final class UsageLog {
                     try? handle.close()
                 } else {
                     try? data.write(to: url)
-                    try? Data("\n".utf8).write(to: url, options: .append)
+                    if let handle = FileHandle(forWritingAtPath: url.path) {
+                        handle.seekToEndOfFile()
+                        handle.write(Data("\n".utf8))
+                        try? handle.close()
+                    }
                 }
             }
             // Trim to newest maxRecords.
