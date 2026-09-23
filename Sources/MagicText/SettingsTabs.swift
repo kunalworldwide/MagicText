@@ -174,9 +174,11 @@ struct LocalModelsTabView: View {
         do {
             downloading[m.id] = 0
             defer { downloading[m.id] = nil }
-            // load() downloads on first use (HF hub API) — progress via delegate is
-            // not exposed here, so we show an indeterminate strip until done.
-            try await engine.load(id: m.id)
+            try await engine.load(id: m.id, progress: { fraction in
+                Task { @MainActor in
+                    downloading[m.id] = fraction
+                }
+            })
             UserDefaults.standard.set(m.id, forKey: "backend")
             activeBackend = m.id
         } catch {

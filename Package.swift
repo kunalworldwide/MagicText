@@ -16,7 +16,6 @@ let package = Package(
                 .product(name: "MLXLLM", package: "mlx-swift-lm"),
                 .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
                 .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
-                .product(name: "MLXLMTokenizers", package: "mlx-swift-lm"),
             ],
             path: "Sources/MagicText"
         ),

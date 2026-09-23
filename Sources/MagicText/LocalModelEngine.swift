@@ -1,8 +1,7 @@
 import Foundation
 import MLXLLM
 import MLXLMCommon
-import MLXLMTokenizers
-import MLXLMHuggingFace
+import MLXHuggingFace
 import MagicTextCore
 
 /// Runs a local MLX model on-device for refinement. One loaded model at a time.
@@ -37,16 +36,20 @@ final class LocalModelEngine {
         }
     }
 
-    /// Downloads (if needed) and loads a model.
-    func load(id: String) async throws {
+    /// Downloads (if needed) and loads a model from Hugging Face.
+    func load(id: String, progress: ((Double) -> Void)? = nil) async throws {
         guard !loading else { return }
         loading = true
         defer { loading = false }
-        let downloader = HuggingFaceDownloader()
-        context = try await LLMModelFactory.shared.load(
-            from: downloader,
+        context = try await loadModel(
+            from: HuggingFaceDownloader(),
             using: TokenizersLoader(),
-            configuration: ModelConfiguration(id: id))
+            id: id,
+            progressHandler: { p in
+                // Progress fraction from Foundation Progress (totalUnitCount-based).
+                let fraction = p.totalUnitCount > 0 ? Double(p.completedUnitCount) / Double(p.totalUnitCount) : 0
+                progress?(fraction)
+            })
         loadedModelID = id
     }
 
