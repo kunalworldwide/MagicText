@@ -42,11 +42,10 @@ final class LocalModelEngine {
         loading = true
         defer { loading = false }
         context = try await loadModel(
-            from: HuggingFaceDownloader(),
-            using: TokenizersLoader(),
+            from: #hubDownloader(),
+            using: #huggingFaceTokenizerLoader(),
             id: id,
             progressHandler: { p in
-                // Progress fraction from Foundation Progress (totalUnitCount-based).
                 let fraction = p.totalUnitCount > 0 ? Double(p.completedUnitCount) / Double(p.totalUnitCount) : 0
                 progress?(fraction)
             })
