@@ -24,23 +24,15 @@ public struct LocalModel: Codable, Equatable, Identifiable {
 }
 
 public enum LocalModelCatalog {
-    /// Curated list of mlx-community 4-bit instruct models that work well for
-    /// short text refinement. Sizes are 4-bit: params(B) * 0.55 GB + ~0.2 GB headroom.
+    /// Curated shortlist of small mlx-community 4-bit instruct models that run
+    /// well locally for short text refinement. Sizes are 4-bit.
     public static let all: [LocalModel] = [
-        LocalModel(id: "mlx-community/Qwen2.5-0.5B-Instruct-4bit", name: "Qwen 2.5 0.5B", params: "0.5B",
-                   sizeGB: 0.4, quality: 2, ramNeededGB: 1.5, note: "Smallest — instant, basic fixes"),
         LocalModel(id: "mlx-community/Qwen2.5-1.5B-Instruct-4bit", name: "Qwen 2.5 1.5B", params: "1.5B",
                    sizeGB: 1.0, quality: 3, ramNeededGB: 2.5, note: "Fast, solid everyday fixes"),
-        LocalModel(id: "mlx-community/Llama-3.2-1B-Instruct-4bit", name: "Llama 3.2 1B", params: "1B",
-                   sizeGB: 0.7, quality: 3, ramNeededGB: 2.0, note: "Snappy, good for English"),
-        LocalModel(id: "mlx-community/Qwen2.5-3B-Instruct-4bit", name: "Qwen 2.5 3B", params: "3B",
-                   sizeGB: 2.0, quality: 4, ramNeededGB: 4.0, note: "Recommended — quality jump, still fast"),
         LocalModel(id: "mlx-community/Llama-3.2-3B-Instruct-4bit", name: "Llama 3.2 3B", params: "3B",
-                   sizeGB: 2.0, quality: 4, ramNeededGB: 4.0, note: "Great English refinement"),
-        LocalModel(id: "mlx-community/Qwen2.5-7B-Instruct-4bit", name: "Qwen 2.5 7B", params: "7B",
-                   sizeGB: 4.5, quality: 5, ramNeededGB: 8.0, note: "Best quality — needs a bigger Mac"),
-        LocalModel(id: "mlx-community/Llama-3.1-8B-Instruct-4bit", name: "Llama 3.1 8B", params: "8B",
-                   sizeGB: 4.5, quality: 5, ramNeededGB: 8.0, note: "Best quality — needs a bigger Mac"),
+                   sizeGB: 2.0, quality: 4, ramNeededGB: 4.0, note: "Recommended — great English refinement"),
+        LocalModel(id: "mlx-community/Qwen2.5-3B-Instruct-4bit", name: "Qwen 2.5 3B", params: "3B",
+                   sizeGB: 2.0, quality: 4, ramNeededGB: 4.0, note: "Strong multilingual refinement"),
     ]
 
     /// Apple Silicon unified memory, GB. 0 if unknown.

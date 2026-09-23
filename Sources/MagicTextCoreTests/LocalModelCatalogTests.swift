@@ -13,21 +13,17 @@ final class LocalModelCatalogTests: XCTestCase {
     }
 
     func testRecommendationsFitRAM() {
-        // 8 GB machine -> 3.6 GB usable -> 0.5B/1B/1.5B (3B needs 4.0)
+        // 8 GB machine -> 3.6 GB usable -> only the 1.5B (2.5) fits
         let recs8 = LocalModelCatalog.recommendations(ramGB: 8)
-        XCTAssertFalse(recs8.isEmpty)
-        XCTAssertTrue(recs8.allSatisfy { $0.ramNeededGB <= 3.6 })
-        // Best first: quality 3-4 models on top
-        XCTAssertEqual(recs8.first?.quality, recs8.map(\.quality).max())
+        XCTAssertEqual(recs8.map(\.params), ["1.5B"])
 
-        // 16 GB machine -> 7.2 GB usable -> 3B fits, 7B/8B (8.0) does not
+        // 16 GB machine -> 7.2 GB usable -> all 3 models fit, best quality first
         let recs16 = LocalModelCatalog.recommendations(ramGB: 16)
-        XCTAssertTrue(recs16.contains { $0.params == "3B" })
-        XCTAssertFalse(recs16.contains { $0.params == "7B" || $0.params == "8B" })
+        XCTAssertEqual(recs16.count, 3)
+        XCTAssertEqual(recs16.first?.quality, 4)
 
-        // 36 GB machine -> everything fits
-        let recs36 = LocalModelCatalog.recommendations(ramGB: 36)
-        XCTAssertEqual(recs36.count, LocalModelCatalog.all.count)
+        // Tiny machine -> nothing fits
+        XCTAssertTrue(LocalModelCatalog.recommendations(ramGB: 4).isEmpty)
     }
 
     func testPresets() {
