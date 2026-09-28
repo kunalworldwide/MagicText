@@ -54,6 +54,9 @@ final class RefineFlow {
     private(set) var phase: Phase?
     private(set) var lastOriginal: String?
     private var lastCapture: TextEngine.Capture?
+    /// Re-entrancy guard: a second hotkey press while one refinement is in
+    /// flight must never paste a second time.
+    private var inFlight = false
 
     let overlay = OverlayWindow()
     private let hotkeyCenter: HotkeyCenter
@@ -64,6 +67,7 @@ final class RefineFlow {
     }
 
     func run() {
+        guard !inFlight else { return }
         guard AXIsProcessTrusted() else {
             show(.failed("Needs Accessibility permission — click the menu bar icon"))
             scheduleHide(after: 4)
@@ -82,16 +86,28 @@ final class RefineFlow {
                 return
             }
         } else if !LocalModelEngine.shared.isReady {
+            // Cold start after a relaunch: kick off the load now so the next
+            // press works instead of failing forever.
+            let id = Storage.localBackendID()
+            if !LocalModelEngine.shared.isLoading, LocalModelEngine.shared.isDownloaded(id) {
+                Task { try? await LocalModelEngine.shared.load(id: id) }
+            }
             show(.failed("Local model loading — try again in a moment"))
             scheduleHide(after: 3)
             return
         }
 
+        inFlight = true
         phase = .reading
         show(.reading)
         Task {
+            defer { inFlight = false }
             let started = Date()
-            let capture = TextEngine.readSelection()
+            // AX reads and pasteboard simulation block (sync RPC + short
+            // waits) — run them off the main actor so the UI never stalls.
+            let capture = await Task.detached(priority: .userInitiated) {
+                TextEngine.readSelection()
+            }.value
             guard let capture, !capture.text.isEmpty else {
                 show(.failed("No text selected"))
                 scheduleHide(after: 2.5)
@@ -111,13 +127,17 @@ final class RefineFlow {
                     modelLabel = id.components(separatedBy: "/").last ?? id
                 } else {
                     let config = try requireConfig()
-                    let client = GatewayClient(config: config, keychain: SystemKeychain())
+                    let client = GatewayClient(config: config, keychain: SystemKeychain(),
+                                                session: GatewayClient.defaultSession)
                     refined = try await client.refine(capture.text, tone: tone)
                     modelLabel = config.model
                 }
                 phase = .writing
                 show(.writing)
-                if TextEngine.replace(capture, with: refined) {
+                let ok = await Task.detached(priority: .userInitiated) {
+                    TextEngine.replace(capture, with: refined)
+                }.value
+                if ok {
                     phase = .done
                     show(.done)
                     scheduleHide(after: 1.5)
@@ -154,8 +174,11 @@ final class RefineFlow {
 
     @discardableResult
     func applyHotkey(_ hk: Hotkey) -> Bool {
+        // Register first, persist only on success — a saved-but-unusable
+        // combo would leave the app hotkey-less after the next launch.
+        guard hotkeyCenter.register(hk) else { return false }
         Storage.saveHotkey(hk)
-        return hotkeyCenter.register(hk)
+        return true
     }
 
     /// Called by the Settings UI whenever anything changes.

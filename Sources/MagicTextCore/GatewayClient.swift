@@ -24,6 +24,15 @@ public final class GatewayClient {
         self.overrideKey = overrideKey
     }
 
+    /// Shared session with sane timeouts so a dead endpoint can't hang a
+    /// refinement forever (and connections get reused across refinements).
+    public static let defaultSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 120
+        return URLSession(configuration: config)
+    }()
+
     private var apiKey: String? {
         if let k = overrideKey, !k.isEmpty { return k }
         if let k = keychain.read(KeychainAccount.gatewayKey), !k.isEmpty { return k }

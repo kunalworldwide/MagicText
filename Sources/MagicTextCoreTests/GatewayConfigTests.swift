@@ -18,8 +18,11 @@ final class GatewayConfigTests: XCTestCase {
     }
 
     func testLocalhostNoScheme() {
+        // Bare localhost gets http:// — Ollama/LM Studio don't serve TLS.
         let c = GatewayConfig(baseURL: "localhost:11434")
-        XCTAssertEqual(c.apiRoot?.absoluteString, "https://localhost:11434/v1")
+        XCTAssertEqual(c.apiRoot?.absoluteString, "http://localhost:11434/v1")
+        let c2 = GatewayConfig(baseURL: "127.0.0.1:1234")
+        XCTAssertEqual(c2.apiRoot?.absoluteString, "http://127.0.0.1:1234/v1")
     }
 
     func testLocalhostHTTPExplicit() {

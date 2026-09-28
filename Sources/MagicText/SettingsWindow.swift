@@ -173,7 +173,8 @@ struct BackendTabView: View {
         fetching = true
         modelsMessage = nil
         let config = GatewayConfig(baseURL: baseURL, model: "")
-        let client = GatewayClient(config: config, keychain: SystemKeychain())
+        let client = GatewayClient(config: config, keychain: SystemKeychain(),
+                                   session: GatewayClient.defaultSession)
         Task { @MainActor in
             defer { fetching = false }
             do {
@@ -217,6 +218,11 @@ final class HotkeyRecorder {
     func start(completion: @escaping (Hotkey?) -> Void) {
         removeMonitor()
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event -> NSEvent? in
+            // Bare modifier presses (⌘, ⌥, ⇧, ⌃) are not shortcuts — keep
+            // listening for the real key instead of recording garbage.
+            if Self.modifierKeyCodes.contains(event.keyCode) {
+                return event
+            }
             self?.removeMonitor()
             if event.keyCode == UInt16(kVK_Escape) {
                 completion(nil)
@@ -232,6 +238,13 @@ final class HotkeyRecorder {
             return nil
         }
     }
+
+    /// Virtual key codes of the modifier keys themselves (left + right).
+    private static let modifierKeyCodes: Set<UInt16> = [
+        UInt16(kVK_Command), UInt16(kVK_Shift), UInt16(kVK_CapsLock), UInt16(kVK_Option),
+        UInt16(kVK_Control), UInt16(kVK_RightCommand), UInt16(kVK_RightShift),
+        UInt16(kVK_RightOption), UInt16(kVK_RightControl), UInt16(kVK_Function),
+    ]
 
     func cancel() {
         removeMonitor()
