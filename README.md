@@ -28,7 +28,7 @@ Select text in any app. Press **⌃⌥⌘R**. A pill appears near your cursor, a
 - **Your AI, your choice** — any OpenAI-compatible gateway: OpenAI, OpenRouter, Groq, Together, Ollama, LM Studio, or a custom endpoint
 - **Or fully local** — download an open-source model (Qwen, Llama) and refine text with zero network calls on Apple Silicon
 - **Private by design** — API keys live in the macOS Keychain, usage history stays on your disk, no telemetry
-- **Native** — pure Swift + SwiftUI, ~170 KB download, no Electron
+- **Native** — pure Swift + SwiftUI, ~12 MB download (MLX included), no Electron
 
 ## Install
 
@@ -78,10 +78,10 @@ Requires Xcode's Swift toolchain (macOS 14+ SDK). CI builds and publishes the DM
 
 ## Roadmap
 
-- [x] v0.1 — refine in place, any OpenAI-compatible gateway
-- [x] v0.2 — local MLX models, model manager, usage history, presets
-- [ ] v0.3 — per-app tone rules
-- [ ] v0.4 — signed + notarized builds, Homebrew cask
+- [x]  v0.1 — refine in place, any OpenAI-compatible gateway, local MLX models, model manager, usage history, presets
+- [x]  v0.2 — production hardening: dark-mode-safe menu bar icon, packaging + CI correctness, flow robustness fixes
+- [ ]  v0.3 — per-app tone rules
+- [ ]  v0.4 — signed + notarized builds, Homebrew cask
 
 ## Support
 

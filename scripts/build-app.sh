@@ -7,6 +7,9 @@ cd "$(dirname "$0")/.."
 OUT_DIR="${1:-build}"
 APP_NAME="MagicText"
 VERSION="$(git describe --tags --always 2>/dev/null || echo 0.0.1)"
+# CFBundleShortVersionString must be numeric (e.g. 0.2.0): strip the leading v
+# and any -N-gXXXX suffix from interim builds.
+NUMERIC_VERSION="$(echo "${VERSION#v}" | cut -d- -f1)"
 
 echo "==> swift build -c release"
 swift build -c release
@@ -35,6 +38,12 @@ if [ -f "${ICON_PNG}" ]; then
     rm -rf "${ICONSET}"
 fi
 
+# Menu bar template icon (white glyph, transparent background) — the app
+# loads it from the bundle resources and marks it isTemplate.
+if [ -f "assets/menubar.png" ]; then
+    cp "assets/menubar.png" "${APP_DIR}/Contents/Resources/menubar.png"
+fi
+
 cat > "${APP_DIR}/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -43,12 +52,12 @@ cat > "${APP_DIR}/Contents/Info.plist" <<PLIST
     <key>CFBundleName</key><string>MagicText</string>
     <key>CFBundleDisplayName</key><string>MagicText</string>
     <key>CFBundleIdentifier</key><string>dev.kunalworldwide.magictext</string>
-    <key>CFBundleVersion</key><string>${VERSION}</string>
-    <key>CFBundleShortVersionString</key><string>${VERSION}</string>
+    <key>CFBundleVersion</key><string>${NUMERIC_VERSION}</string>
+    <key>CFBundleShortVersionString</key><string>${NUMERIC_VERSION}</string>
     <key>CFBundleExecutable</key><string>MagicText</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
-    <key>LSMinimumSystemVersion</key><string>13.0</string>
+    <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
     <key>NSHumanReadableCopyright</key><string>MIT License</string>
     <key>NSPrincipalClass</key><string>NSApplication</string>
