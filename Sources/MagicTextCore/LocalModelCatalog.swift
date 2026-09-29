@@ -58,7 +58,10 @@ public enum LocalModelCatalog {
 
     /// Models that fit this machine, best-first.
     public static func recommendations(ramGB: Int) -> [LocalModel] {
-        let usable = Double(ramGB) * 0.45   // leave headroom for the OS + foreground app
+        // MLX 3B models routinely spike past their nominal footprint during
+        // generation; keep 50 % of physical memory free for the OS + the
+        // foreground app, not 45 %.
+        let usable = Double(ramGB) * 0.50
         let fits = all.filter { $0.ramNeededGB <= usable }
         if fits.isEmpty { return [] }
         // Best quality that fits, then everything below it for choice.
