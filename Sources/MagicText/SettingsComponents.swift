@@ -25,8 +25,15 @@ struct SettingsCard<Content: View>: View {
 
 /// Section header used inside the detail pane.
 struct SettingsSectionHeader: View {
-    let title: String
+    var title: String
     var subtitle: String?
+
+    // Unlabeled first parameter matches SwiftUI conventions (`Text(_:)`, `Picker(_:)`)
+    // so call sites read `SettingsSectionHeader("Provider", subtitle: ...)`.
+    init(_ title: String, subtitle: String? = nil) {
+        self.title = title
+        self.subtitle = subtitle
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
