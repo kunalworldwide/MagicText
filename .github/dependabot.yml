@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: "swift"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    # mlx-swift-lm is pinned to a verified API surface (exact in Package.swift);
+    # weekly bumps surface drift without silently breaking the build.
+    open-pull-requests-limit: 5

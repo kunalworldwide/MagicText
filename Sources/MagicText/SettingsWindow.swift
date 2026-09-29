@@ -3,26 +3,6 @@ import AppKit
 import Carbon.HIToolbox
 import MagicTextCore
 
-struct SettingsView: View {
-    let flow: RefineFlow
-    @State private var selectedTab: Int = 0
-
-    var body: some View {
-        TabView(selection: $selectedTab) {
-            BackendTabView(flow: flow)
-                .tabItem { Label("Backend", systemImage: "server.rack") }
-                .tag(0)
-            LocalModelsTabView(flow: flow)
-                .tabItem { Label("Local Models", systemImage: "cpu") }
-                .tag(1)
-            UsageTabView(flow: flow)
-                .tabItem { Label("Usage & History", systemImage: "clock.arrow.circlepath") }
-                .tag(2)
-        }
-        .frame(width: 640, height: 540)
-    }
-}
-
 // MARK: - Backend tab
 
 struct BackendTabView: View {
@@ -52,111 +32,166 @@ struct BackendTabView: View {
     var isPreset: Bool { GatewayPresets.matching(url: baseURL) != nil || baseURL.isEmpty }
 
     var body: some View {
-        Form {
-            Section {
+        ScrollView {
+            VStack(spacing: 18) {
+                providerCard
+                credentialsCard
+                modelCard
+                toneAndShortcutCard
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private var providerCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SettingsSectionHeader("Provider", subtitle: providerFooter)
+            SettingsCard {
                 Picker("Provider", selection: $baseURL) {
                     Text("Custom…").tag("")
                     ForEach(GatewayPresets.all) { p in
                         Text(p.name).tag(p.baseURL)
                     }
                 }
+                .pickerStyle(.menu)
+                .labelsHidden()
                 if baseURL.isEmpty {
                     TextField("Base URL", text: $baseURL, prompt: Text("https://your-gateway/v1"))
+                        .textFieldStyle(.roundedBorder)
                         .autocorrectionDisabled()
                 }
-            } header: {
-                Text("Provider")
-            } footer: {
-                Text(providerFooter)
             }
-            .onChange(of: baseURL) { save() }
+        }
+        .onChange(of: baseURL) { save() }
+    }
 
-            Section {
-                SecureField("API Key (stored in Keychain)", text: $apiKey)
-                    .onChange(of: apiKey) { newKey in
-                        // Only ever write; an empty field must never wipe a stored key.
-                        let trimmed = newKey.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !trimmed.isEmpty {
-                            SystemKeychain().save(trimmed, for: KeychainAccount.gatewayKey)
-                            savedKey = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { savedKey = false }
+    private var credentialsCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SettingsSectionHeader("Credentials",
+                                  subtitle: "Stored in the macOS Keychain. Ollama / LM Studio / local servers need no key.")
+            SettingsCard {
+                HStack(spacing: 10) {
+                    SecureField("API Key", text: $apiKey)
+                        .textFieldStyle(.roundedBorder)
+                        .onChange(of: apiKey) { newKey in
+                            // Only ever write; an empty field must never wipe a stored key.
+                            let trimmed = newKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !trimmed.isEmpty {
+                                SystemKeychain().save(trimmed, for: KeychainAccount.gatewayKey)
+                                savedKey = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { savedKey = false }
+                            }
+                            save()
                         }
-                        save()
+                    if savedKey {
+                        Label("Saved", systemImage: "checkmark.circle.fill")
+                            .labelStyle(.iconOnly)
+                            .foregroundStyle(.green)
+                            .transition(.opacity)
                     }
-                if savedKey {
-                    Text("Saved ✓").font(.caption).foregroundStyle(.green)
                 }
-            } header: {
-                Text("Credentials")
-            } footer: {
-                Text("Ollama / LM Studio / local servers need no key.")
             }
+        }
+    }
 
-            Section {
-                HStack {
-                    Button(fetching ? "Fetching…" : "Fetch Models") { fetchModels() }
-                        .disabled(fetching || baseURL.isEmpty)
-                    if fetching { ProgressView().controlSize(.small) }
+    private var modelCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SettingsSectionHeader("Model",
+                                  subtitle: "The gateway model used to refine text in place.")
+            SettingsCard {
+                HStack(spacing: 10) {
+                    Button {
+                        fetchModels()
+                    } label: {
+                        Label(fetching ? "Fetching…" : "Fetch Models",
+                              systemImage: fetching ? "arrow.triangle.2.circlepath" : "arrow.clockwise")
+                    }
+                    .disabled(fetching || baseURL.isEmpty)
+                    if fetching {
+                        ProgressView().controlSize(.small)
+                    }
+                    Spacer()
                 }
                 if !models.isEmpty {
                     Picker("Model", selection: $selectedModel) {
                         ForEach(models, id: \.self) { Text($0) }
                     }
+                    .pickerStyle(.menu)
                     .onChange(of: selectedModel) { save() }
                 } else if !selectedModel.isEmpty {
-                    Text("Current: \(selectedModel)").font(.caption).foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                        Text("Current: \(selectedModel)")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 if let msg = modelsMessage {
-                    Text(msg).font(.caption).foregroundStyle(.red)
+                    Label(msg, systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.red)
                 }
-            } header: {
-                Text("Model")
-            } footer: {
-                Text("The gateway model used to refine text in place.")
-            }
-
-            Section {
-                Picker("Tone", selection: $tone) {
-                    ForEach(Tone.allCases) { t in
-                        Text(t.label).tag(t)
-                    }
-                }
-                .onChange(of: tone) { save() }
-            } header: {
-                Text("Tone")
-            }
-
-            Section {
-                HStack {
-                    Text(hotkey.displayString)
-                        .font(.system(size: 20, weight: .semibold))
-                        .frame(width: 110)
-                        .padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.4)))
-                    Button(recording ? "Press keys… (Esc cancels)" : "Record Shortcut") {
-                        recording = true
-                        HotkeyRecorder.shared.start { result in
-                            recording = false
-                            guard let result else { return }
-                            if flow.applyHotkey(result) {
-                                hotkey = result
-                                hotkeyError = nil
-                            } else {
-                                hotkeyError = "That combo is taken or reserved — try another"
-                            }
-                        }
-                    }
-                }
-                if let err = hotkeyError {
-                    Text(err).font(.caption).foregroundStyle(.red)
-                }
-            } header: {
-                Text("Global Shortcut")
-            } footer: {
-                Text("Select text anywhere, press the shortcut, and MagicText refines it in place.")
             }
         }
-        .formStyle(.grouped)
+    }
+
+    private var toneAndShortcutCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SettingsSectionHeader("Tone & Shortcut",
+                                  subtitle: "How refinements sound and how you trigger them.")
+            SettingsCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Text("Tone").font(.system(size: 12, weight: .medium)).frame(width: 80, alignment: .leading)
+                        Picker("", selection: $tone) {
+                            ForEach(Tone.allCases) { t in
+                                Text(t.label).tag(t)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        Spacer()
+                    }
+                    .onChange(of: tone) { save() }
+
+                    Divider()
+
+                    HStack(spacing: 12) {
+                        Text("Shortcut").font(.system(size: 12, weight: .medium)).frame(width: 80, alignment: .leading)
+                        Text(hotkey.displayString)
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .frame(minWidth: 100)
+                            .padding(.vertical, 6).padding(.horizontal, 12)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.5)))
+                        Button(recording ? "Press keys… (Esc cancels)" : "Record") {
+                            recording = true
+                            HotkeyRecorder.shared.start { result in
+                                recording = false
+                                guard let result else { return }
+                                if flow.applyHotkey(result) {
+                                    hotkey = result
+                                    hotkeyError = nil
+                                } else {
+                                    hotkeyError = "That combo is taken or reserved — try another"
+                                }
+                            }
+                        }
+                        .controlSize(.small)
+                        Spacer()
+                    }
+                    if let err = hotkeyError {
+                        Label(err, systemImage: "exclamationmark.triangle.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.red)
+                    }
+                    Text("Select text anywhere, press the shortcut, and MagicText refines it in place.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     private var providerFooter: String {

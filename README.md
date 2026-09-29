@@ -76,6 +76,17 @@ bash scripts/build-app.sh         # build/MagicText.app + DMG
 
 Requires Xcode's Swift toolchain (macOS 14+ SDK). CI builds and publishes the DMG on every release tag.
 
+## Release
+
+Releases are **tag-driven**. To publish a new release:
+
+```bash
+git tag v0.2.0              # must be vX.Y.Z — the build script fails otherwise
+git push origin v0.2.0
+```
+
+CI then runs `swift test`, builds the DMG via `scripts/build-app.sh`, and attaches it to a GitHub release with auto-generated notes. For a local DMG without tagging first: `VERSION=0.2.0 bash scripts/build-app.sh`.
+
 ## Roadmap
 
 - [x]  v0.1 — refine in place, any OpenAI-compatible gateway, local MLX models, model manager, usage history, presets

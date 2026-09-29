@@ -6,10 +6,23 @@ cd "$(dirname "$0")/.."
 
 OUT_DIR="${1:-build}"
 APP_NAME="MagicText"
-VERSION="$(git describe --tags --always 2>/dev/null || echo 0.0.1)"
+# Allow explicit override (useful for local builds without a tag):
+#   VERSION=0.2.0 scripts/build-app.sh
+VERSION="${VERSION:-$(git describe --tags --always 2>/dev/null || echo 0.0.1)}"
 # CFBundleShortVersionString must be numeric (e.g. 0.2.0): strip the leading v
 # and any -N-gXXXX suffix from interim builds.
 NUMERIC_VERSION="$(echo "${VERSION#v}" | cut -d- -f1)"
+
+# Fail loud if the resolved version isn't numeric — Gatekeeper rejects a
+# non-numeric CFBundleShortVersionString at plist validation time, so a
+# silent SHA-from-no-tag build would produce an installable-looking but
+# unlaunchable app. On a proper release tag this is always "X.Y.Z".
+if ! [[ "${NUMERIC_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "error: NUMERIC_VERSION='${NUMERIC_VERSION}' is not X.Y.Z" >&2
+    echo "hint:  tag this commit with 'git tag vX.Y.Z' before building," >&2
+    echo "       or pass VERSION=X.Y.Z scripts/build-app.sh for a local build." >&2
+    exit 1
+fi
 
 echo "==> swift build -c release"
 swift build -c release

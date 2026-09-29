@@ -201,15 +201,16 @@ final class RefineFlow {
 
     func openSettings() {
         if settingsWindowController == nil {
-            let view = SettingsView(flow: self)
+            let view = SidebarSettingsView(flow: self)
             // A titled window with a standard Edit menu gives ⌘C/⌘V/⌘X/⌘A key
             // equivalents to all text fields inside (borderless panels lack them).
-            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 540),
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 720, height: 560),
                                    styleMask: [.titled, .closable, .miniaturizable],
                                    backing: .buffered, defer: false)
-            window.title = "MagicText Settings"
+            window.title = "MagicText"
             window.contentView = NSHostingView(rootView: view)
             window.center()
+            window.minSize = NSSize(width: 720, height: 540)
             settingsWindowController = NSWindowController(window: window)
         }
         settingsWindowController?.showWindow(nil)
