@@ -9,7 +9,7 @@ import CoreGraphics
 /// and writes refined text back the same way.
 enum TextEngine {
 
-    struct Capture {
+    struct Capture: @unchecked Sendable {
         let text: String
         /// The element the text came from — used to replace in place.
         let element: AXUIElement?
@@ -64,7 +64,7 @@ enum TextEngine {
         let savedCount = board.changeCount
 
         postKey(UInt16(kVK_ANSI_C), modifiers: .maskCommand)
-        guard wait(changeCountOf: board, exceeds: savedCount, timeout: 0.3) else {
+        guard wait(changeCountOf: board, exceeds: savedCount, timeout: 0.5) else {
             Snapshot.restore(saved, to: board)
             return nil
         }

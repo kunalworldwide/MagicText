@@ -24,7 +24,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         mainMenu.addItem(editMenuItem)
 
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "Settings…", action: #selector(NSApplication.orderFrontCharacterPalette(_:)), keyEquivalent: "")
+        let appSettings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+        appSettings.target = self
+        appMenu.addItem(appSettings)
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Quit MagicText", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appMenuItem.submenu = appMenu
@@ -43,12 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
-            if let appIcon = NSImage(named: "AppIcon") {
-                button.image = appIcon
-            } else {
-                button.image = NSImage(systemSymbolName: "wand.and.stars",
-                                        accessibilityDescription: "MagicText")
-            }
+            button.image = Self.menuBarImage()
         }
         rebuildMenu()
 
@@ -60,6 +57,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         let hk = RefineFlow.Storage.loadHotkey()
         hotkeyCenter.register(hk)
 
+        // Warm up the chosen local model in the background so the first
+        // refinement after a relaunch doesn't wait on a cold load.
+        let backendID = RefineFlow.Storage.localBackendID()
+        if !backendID.isEmpty, LocalModelEngine.shared.isDownloaded(backendID) {
+            Task { try? await LocalModelEngine.shared.load(id: backendID) }
+        }
+
         // First run: no gateway yet -> open Settings.
         if RefineFlow.Storage.loadConfig()?.baseURL.isEmpty != false
             && RefineFlow.Storage.localBackendID().isEmpty {
@@ -67,6 +71,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
                 self?.flow.openSettings()
             }
         }
+    }
+
+    /// Menu bar icon: the white template glyph (assets/menubar.png). macOS
+    /// recolors template images to match the menu bar in light and dark mode.
+    /// Falls back to an SF Symbol if the asset is missing.
+    private static func menuBarImage() -> NSImage? {
+        if let url = Bundle.main.url(forResource: "menubar", withExtension: "png"),
+           let image = NSImage(contentsOf: url) {
+            image.isTemplate = true
+            image.size = NSSize(width: 18, height: 18)
+            return image
+        }
+        return NSImage(systemSymbolName: "wand.and.stars",
+                       accessibilityDescription: "MagicText")
     }
 
     private func rebuildMenu() {
@@ -103,8 +121,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     @objc private func copyOriginal() { MainActor.assumeIsolated { flow.copyOriginal() } }
     @objc private func grantAccess() {
         MainActor.assumeIsolated { flow.requestAccessibility() }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.rebuildMenu()
+        pollTrust(remaining: 15)
+    }
+
+    /// Keep re-checking the Accessibility grant for a while — the user may
+    /// take a moment in System Settings, and the warning item should clear
+    /// itself once the permission lands.
+    private func pollTrust(remaining: Int) {
+        guard remaining > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self else { return }
+            self.rebuildMenu()
+            if !AXIsProcessTrusted() { self.pollTrust(remaining: remaining - 1) }
         }
     }
 }

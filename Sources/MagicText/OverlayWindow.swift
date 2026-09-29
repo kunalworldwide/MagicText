@@ -35,7 +35,10 @@ final class OverlayWindow {
             }
             self.panel?.setFrameOrigin(origin)
             self.panel?.orderFrontRegardless()
-            self.scheduleHide()
+            // Failsafe only: the flow hides the pill itself on completion or
+            // failure. A short auto-hide here would kill the pill mid-refine
+            // while a slow model is still working.
+            self.scheduleHide(after: 120)
         }
     }
 
@@ -47,11 +50,11 @@ final class OverlayWindow {
         }
     }
 
-    private func scheduleHide() {
+    private func scheduleHide(after delay: TimeInterval) {
         hideWorkItem?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.panel?.orderOut(nil) }
         hideWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 }
 

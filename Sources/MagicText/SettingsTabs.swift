@@ -10,6 +10,9 @@ struct LocalModelsTabView: View {
     @State private var downloading: [String: Double] = [:]   // model id -> progress 0...1
     @State private var activeBackend: String = ""
     @State private var loadError: String?
+    /// Bumped when the downloaded set changes so rows re-render (isDownloaded
+    /// reads the HF cache, which is not observable).
+    @State private var refreshTrigger: Int = 0
 
     private let engine = LocalModelEngine.shared
 
@@ -73,7 +76,6 @@ struct LocalModelsTabView: View {
         .onAppear {
             ramGB = LocalModelCatalog.totalSystemMemoryGB()
             activeBackend = UserDefaults.standard.string(forKey: "backend") ?? ""
-            refreshDownloadedFlags()
         }
     }
 
@@ -83,11 +85,8 @@ struct LocalModelsTabView: View {
         LocalModelCatalog.recommendations(ramGB: ramGB).first
     }
 
-    private func refreshDownloadedFlags() {
-        // forces view refresh; isDownloaded reads the HF cache each render
-    }
-
     private func modelRow(_ m: LocalModel) -> some View {
+        _ = refreshTrigger   // dependency: bumping this re-renders the rows
         let downloaded = engine.isDownloaded(m.id)
         let isTop = topRecommendation?.id == m.id
         return HStack(alignment: .center, spacing: 10) {
@@ -128,6 +127,9 @@ struct LocalModelsTabView: View {
                         UserDefaults.standard.set("", forKey: "backend")
                         activeBackend = ""
                     }
+                    // Force the row to re-render so the Download button
+                    // comes back (isDownloaded is checked per render).
+                    refreshTrigger += 1
                 }
                 .controlSize(.small)
                 Button("Use") {

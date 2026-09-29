@@ -13,15 +13,22 @@ final class HotkeyCenter {
     private static let signature: OSType = 0x4D545854 // "MTXT"
 
     func register(_ hotkey: Hotkey) -> Bool {
-        unregister()
+        // Re-registering the same combo is a no-op (Settings re-saves the
+        // whole config on every edit; don't churn the registration).
+        if let c = current, registered != nil, c == hotkey { return true }
         installHandlerIfNeeded()
 
+        // Register the NEW combo first: if it's taken we keep the old one
+        // live, so a failed re-record never leaves the user with no hotkey.
         let id = EventHotKeyID(signature: Self.signature, id: 1)
         var ref: EventHotKeyRef?
         let status = RegisterEventHotKey(hotkey.keyCode, hotkey.modifiers, id,
                                          GetApplicationEventTarget(), 0, &ref)
-        guard status == noErr, ref != nil else { return false }
-        registered = ref
+        guard status == noErr, let newRef = ref else { return false }
+        if let old = registered {
+            UnregisterEventHotKey(old)
+        }
+        registered = newRef
         current = hotkey
         return true
     }
